@@ -1,4 +1,3 @@
-import express from "express";
 import { createServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import next from "next";
@@ -38,14 +37,37 @@ function generatePlayerId(index: number): string {
   return `p${index + 1}`;
 }
 
-app.prepare().then(() => {
-  const expressApp = express();
-  const httpServer = createServer(expressApp);
+let nextReady = false;
 
-  const io = new SocketServer(httpServer, {
-    cors: { origin: "*", methods: ["GET", "POST"] },
-    transports: ["websocket", "polling"],
-  });
+const httpServer = createServer((req, res) => {
+  if (req.url === "/healthz" || req.url === "/") {
+    if (!nextReady) {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("ok");
+      return;
+    }
+  }
+  if (!nextReady) {
+    res.writeHead(503, { "Content-Type": "text/plain" });
+    res.end("Starting...");
+    return;
+  }
+  handle(req, res);
+});
+
+const io = new SocketServer(httpServer, {
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  transports: ["websocket", "polling"],
+});
+
+httpServer.listen(port, hostname, () => {
+  console.log(`> HTTP server listening on http://${hostname}:${port}`);
+});
+
+async function main() {
+  await app.prepare();
+  console.log("> Next.js app prepared");
+  nextReady = true;
 
   io.on("connection", (socket) => {
     console.log(`[Socket] Connected: ${socket.id}`);
@@ -174,11 +196,12 @@ app.prepare().then(() => {
     });
   });
 
-  expressApp.all("/{*path}", (req: any, res: any) => handle(req, res));
+  console.log("> All routes ready");
+}
 
-  httpServer.listen(port, hostname, () => {
-    console.log(`> Server ready on http://${hostname}:${port}`);
-  });
+main().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
 
 function handlePlayerLeave(socket: any, roomId: string, io: SocketServer) {
