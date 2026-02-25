@@ -1,0 +1,303 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Light mode base */
+  --background: oklch(0.97 0.003 260);
+  --foreground: oklch(0.18 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 260);
+  --primary: oklch(0.55 0.20 155);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.94 0.005 260);
+  --secondary-foreground: oklch(0.30 0.02 260);
+  --muted: oklch(0.94 0.005 260);
+  --muted-foreground: oklch(0.50 0.015 260);
+  --accent: oklch(0.55 0.20 155);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.58 0.25 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.88 0.008 260);
+  --input: oklch(0.96 0.004 260);
+  --ring: oklch(0.55 0.20 155);
+  --radius: 0.875rem;
+
+  --chart-1: oklch(0.55 0.20 155);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --sidebar: oklch(0.98 0.002 260);
+  --sidebar-foreground: oklch(0.18 0.02 260);
+  --sidebar-primary: oklch(0.55 0.20 155);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0.005 260);
+  --sidebar-accent-foreground: oklch(0.30 0.02 260);
+  --sidebar-border: oklch(0.88 0.008 260);
+  --sidebar-ring: oklch(0.55 0.20 155);
+
+  /* Game-specific tokens */
+  --game-table: oklch(0.94 0.015 155);
+  --game-table-foreground: oklch(0.22 0.03 155);
+  --play-area: oklch(0.96 0.003 260);
+
+  /* UI helpers */
+  --card-dim: oklch(0.96 0.003 260);
+  --card-subtle: oklch(0.97 0.003 260);
+  --primary-subtle: oklch(0.94 0.03 155);
+  --primary-muted: oklch(0.90 0.04 155);
+  --border-dim: oklch(0.90 0.006 260);
+  --text-dim: oklch(0.60 0.01 260);
+  --text-subdued: oklch(0.55 0.012 260);
+  --destructive-subtle: oklch(0.96 0.02 25);
+
+  /* WA Edition card colors - VIVID for banners */
+  --card-darkblue: oklch(0.40 0.20 260);
+  --card-darkblue-bg: oklch(0.94 0.02 260);
+  --card-darkblue-border: oklch(0.80 0.06 260);
+  --card-darkblue-banner: oklch(0.40 0.20 260);
+
+  --card-lightblue: oklch(0.65 0.16 230);
+  --card-lightblue-bg: oklch(0.95 0.02 230);
+  --card-lightblue-border: oklch(0.82 0.06 230);
+  --card-lightblue-banner: oklch(0.65 0.16 230);
+
+  --card-brown: oklch(0.52 0.12 55);
+  --card-brown-bg: oklch(0.95 0.02 55);
+  --card-brown-border: oklch(0.80 0.06 55);
+  --card-brown-banner: oklch(0.52 0.12 55);
+
+  --card-green: oklch(0.55 0.20 148);
+  --card-green-bg: oklch(0.95 0.02 148);
+  --card-green-border: oklch(0.80 0.08 148);
+  --card-green-banner: oklch(0.55 0.20 148);
+
+  --card-utility: oklch(0.58 0.10 95);
+  --card-utility-bg: oklch(0.95 0.02 95);
+  --card-utility-border: oklch(0.82 0.05 95);
+  --card-utility-banner: oklch(0.58 0.10 95);
+
+  --card-red: oklch(0.58 0.24 25);
+  --card-red-bg: oklch(0.96 0.02 25);
+  --card-red-border: oklch(0.82 0.08 25);
+  --card-red-banner: oklch(0.58 0.24 25);
+
+  --card-yellow: oklch(0.82 0.16 90);
+  --card-yellow-bg: oklch(0.97 0.02 90);
+  --card-yellow-border: oklch(0.88 0.08 90);
+
+  --card-orange: oklch(0.68 0.18 52);
+  --card-orange-bg: oklch(0.96 0.02 52);
+  --card-orange-border: oklch(0.84 0.08 52);
+  --card-orange-banner: oklch(0.68 0.18 52);
+
+  --card-purple: oklch(0.52 0.22 300);
+  --card-purple-bg: oklch(0.96 0.02 300);
+  --card-purple-border: oklch(0.82 0.08 300);
+  --card-purple-banner: oklch(0.52 0.22 300);
+
+  --card-pink: oklch(0.65 0.20 350);
+  --card-pink-bg: oklch(0.96 0.02 350);
+  --card-pink-border: oklch(0.82 0.08 350);
+  --card-pink-banner: oklch(0.65 0.20 350);
+
+  --card-railroad: oklch(0.30 0.02 260);
+  --card-railroad-bg: oklch(0.95 0.005 260);
+  --card-railroad-border: oklch(0.75 0.01 260);
+  --card-railroad-banner: oklch(0.30 0.02 260);
+
+  /* Action card */
+  --card-action: oklch(0.55 0.24 15);
+  --card-action-bg: oklch(0.97 0.02 15);
+  --card-action-border: oklch(0.84 0.08 15);
+  --card-action-banner: oklch(0.55 0.24 15);
+
+  /* Money card value tiers */
+  --money-1: oklch(0.90 0.06 220);
+  --money-2: oklch(0.88 0.07 170);
+  --money-3: oklch(0.88 0.08 155);
+  --money-5: oklch(0.88 0.08 52);
+  --money-10: oklch(0.90 0.10 85);
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-game-table: var(--game-table);
+  --color-game-table-foreground: var(--game-table-foreground);
+  --color-play-area: var(--play-area);
+  --color-card-dim: var(--card-dim);
+  --color-card-subtle: var(--card-subtle);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-muted: var(--primary-muted);
+  --color-border-dim: var(--border-dim);
+  --color-text-dim: var(--text-dim);
+  --color-text-subdued: var(--text-subdued);
+  --color-destructive-subtle: var(--destructive-subtle);
+
+  --color-card-darkblue: var(--card-darkblue);
+  --color-card-darkblue-bg: var(--card-darkblue-bg);
+  --color-card-darkblue-border: var(--card-darkblue-border);
+  --color-card-darkblue-banner: var(--card-darkblue-banner);
+  --color-card-lightblue: var(--card-lightblue);
+  --color-card-lightblue-bg: var(--card-lightblue-bg);
+  --color-card-lightblue-border: var(--card-lightblue-border);
+  --color-card-lightblue-banner: var(--card-lightblue-banner);
+  --color-card-brown: var(--card-brown);
+  --color-card-brown-bg: var(--card-brown-bg);
+  --color-card-brown-border: var(--card-brown-border);
+  --color-card-brown-banner: var(--card-brown-banner);
+  --color-card-green: var(--card-green);
+  --color-card-green-bg: var(--card-green-bg);
+  --color-card-green-border: var(--card-green-border);
+  --color-card-green-banner: var(--card-green-banner);
+  --color-card-utility: var(--card-utility);
+  --color-card-utility-bg: var(--card-utility-bg);
+  --color-card-utility-border: var(--card-utility-border);
+  --color-card-utility-banner: var(--card-utility-banner);
+  --color-card-red: var(--card-red);
+  --color-card-red-bg: var(--card-red-bg);
+  --color-card-red-border: var(--card-red-border);
+  --color-card-red-banner: var(--card-red-banner);
+  --color-card-yellow: var(--card-yellow);
+  --color-card-yellow-bg: var(--card-yellow-bg);
+  --color-card-yellow-border: var(--card-yellow-border);
+  --color-card-orange: var(--card-orange);
+  --color-card-orange-bg: var(--card-orange-bg);
+  --color-card-orange-border: var(--card-orange-border);
+  --color-card-orange-banner: var(--card-orange-banner);
+  --color-card-purple: var(--card-purple);
+  --color-card-purple-bg: var(--card-purple-bg);
+  --color-card-purple-border: var(--card-purple-border);
+  --color-card-purple-banner: var(--card-purple-banner);
+  --color-card-pink: var(--card-pink);
+  --color-card-pink-bg: var(--card-pink-bg);
+  --color-card-pink-border: var(--card-pink-border);
+  --color-card-pink-banner: var(--card-pink-banner);
+  --color-card-railroad: var(--card-railroad);
+  --color-card-railroad-bg: var(--card-railroad-bg);
+  --color-card-railroad-border: var(--card-railroad-border);
+  --color-card-railroad-banner: var(--card-railroad-banner);
+  --color-card-action: var(--card-action);
+  --color-card-action-bg: var(--card-action-bg);
+  --color-card-action-border: var(--card-action-border);
+  --color-card-action-banner: var(--card-action-banner);
+  --color-money-1: var(--money-1);
+  --color-money-2: var(--money-2);
+  --color-money-3: var(--money-3);
+  --color-money-5: var(--money-5);
+  --color-money-10: var(--money-10);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .btn-3d {
+    position: relative;
+    transform: translateY(0);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+  }
+  .btn-3d:active {
+    transform: translateY(3px);
+  }
+
+  .btn-3d-primary {
+    box-shadow: 0 4px 0 oklch(0.40 0.16 155), 0 6px 12px oklch(0.40 0.16 155 / 0.3);
+  }
+  .btn-3d-primary:active {
+    box-shadow: 0 1px 0 oklch(0.40 0.16 155), 0 2px 4px oklch(0.40 0.16 155 / 0.2);
+  }
+
+  .btn-3d-secondary {
+    box-shadow: 0 4px 0 oklch(0.80 0.006 260), 0 6px 12px oklch(0 0 0 / 0.08);
+  }
+  .btn-3d-secondary:active {
+    box-shadow: 0 1px 0 oklch(0.80 0.006 260), 0 2px 4px oklch(0 0 0 / 0.05);
+  }
+
+  .btn-3d-ghost {
+    box-shadow: 0 3px 0 oklch(0.82 0.006 260), 0 4px 8px oklch(0 0 0 / 0.06);
+  }
+  .btn-3d-ghost:active {
+    box-shadow: 0 1px 0 oklch(0.82 0.006 260), 0 1px 3px oklch(0 0 0 / 0.04);
+  }
+
+  .btn-3d-danger {
+    box-shadow: 0 4px 0 oklch(0.42 0.20 25), 0 6px 12px oklch(0.42 0.20 25 / 0.3);
+  }
+  .btn-3d-danger:active {
+    box-shadow: 0 1px 0 oklch(0.42 0.20 25), 0 2px 4px oklch(0.42 0.20 25 / 0.2);
+  }
+
+  .btn-3d-yellow {
+    box-shadow: 0 4px 0 oklch(0.62 0.14 85), 0 6px 12px oklch(0.62 0.14 85 / 0.3);
+  }
+  .btn-3d-yellow:active {
+    box-shadow: 0 1px 0 oklch(0.62 0.14 85), 0 2px 4px oklch(0.62 0.14 85 / 0.2);
+  }
+
+  /* Card hover lift */
+  .card-lift {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-lift:hover {
+    transform: scale(1.04) translateY(-3px);
+  }
+}

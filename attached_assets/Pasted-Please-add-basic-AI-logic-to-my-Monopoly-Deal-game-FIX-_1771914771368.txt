@@ -1,0 +1,155 @@
+Please add basic AI logic to my Monopoly Deal game.
+
+FIX 1 - In lib/use-game-store.ts, add an AI hand for each player.
+Update the GameStore interface to add:
+  aiHands: Record<string, GameCard[]>
+
+Add to initial state:
+  aiHands: {},
+
+In the startGame function, after dealing humanHand, deal 7 cards to each AI player.
+Find:
+  players.slice(1).forEach(() => shuffled.splice(0, 5));
+
+Replace with:
+  const aiHands: Record<string, GameCard[]> = {};
+  players.slice(1).forEach((player, i) => {
+    aiHands[player.id] = shuffled.splice(0, 7);
+  });
+
+Then inside the set block in startGame, add:
+  state.aiHands = aiHands;
+
+FIX 2 - In lib/use-game-store.ts, add a runAiTurn function to the GameStore interface:
+  runAiTurn: () => void
+
+FIX 3 - In lib/use-game-store.ts, add the runAiTurn implementation alongside other actions:
+
+runAiTurn: () => {
+  const state = get()
+  const aiPlayerId = state.currentTurnPlayerId
+  if (aiPlayerId === state.currentPlayerId) return // not an AI turn
+
+  const aiPlayer = state.players.find((p) => p.id === aiPlayerId)
+  if (!aiPlayer) return
+
+  let aiHand = [...(state.aiHands[aiPlayerId] ?? [])]
+  let actionsLeft = 3
+  const actions: string[] = []
+
+  // Draw 2 cards for AI
+  const drawn = state.deck.slice(0, 2)
+  aiHand = [...aiHand, ...drawn]
+
+  // Play up to 3 cards - prioritise properties, then bank money
+  const toPlay: GameCard[] = []
+  const toBank: GameCard[] = []
+  const remaining: GameCard[] = []
+
+  for (const card of aiHand) {
+    if (actionsLeft <= 0) {
+      remaining.push(card)
+      continue
+    }
+    if (isPropertyCard(card) || isPropertyWildcard(card)) {
+      toPlay.push(card)
+      actionsLeft--
+    } else if (isMoneyCard(card) && actionsLeft > 0) {
+      toBank.push(card)
+      actionsLeft--
+    } else {
+      remaining.push(card)
+    }
+  }
+
+  // Apply property cards to AI player's sets
+  set((s) => {
+    const playerIdx = s.players.findIndex((p) => p.id === aiPlayerId)
+    
+    for (const card of toPlay) {
+      if (isPropertyCard(card)) {
+        s.players[playerIdx].propertySets = addCardToPropertySets(
+          s.players[playerIdx].propertySets,
+          card
+        )
+        actions.push(`played ${card.name}`)
+      } else if (isPropertyWildcard(card)) {
+        const colors = Array.isArray(card.colors) 
+          ? card.colors.filter((c): c is CardColor => 
+              ["darkblue","lightblue","brown","green","utility","red","yellow","orange","pink","railroad","purple"].includes(c)
+            )
+          : []
+        if (colors.length > 0) {
+          const matchingSet = s.players[playerIdx].propertySets.find(
+            (ps) => colors.includes(ps.color)
+          )
+          const chosenColor = matchingSet ? matchingSet.color : colors[0]
+          const defaults = DEFAULT_SET_PROPS[chosenColor] ?? { rentTable: [], setRequired: 2 }
+          const existingSet = s.players[playerIdx].propertySets.find((ps) => ps.color === chosenColor)
+          const realCard = existingSet?.cards.find(
+            (c) => "rentTable" in c && Array.isArray((c as any).rentTable) && (c as any).rentTable.length > 0
+          ) as PropertyCard | undefined
+          const fakeCard: PropertyCard = {
+            id: card.id,
+            name: card.name,
+            color: chosenColor,
+            value: card.value,
+            rentTable: realCard?.rentTable ?? defaults.rentTable,
+            setRequired: realCard?.setRequired ?? existingSet?.requiredCount ?? defaults.setRequired,
+          }
+          s.players[playerIdx].propertySets = addCardToPropertySets(
+            s.players[playerIdx].propertySets,
+            fakeCard
+          )
+          actions.push(`played ${card.name} on ${chosenColor}`)
+        }
+      }
+    }
+
+    // Bank money cards
+    for (const card of toBank) {
+      s.players[playerIdx].bankCards.push(card as never)
+      s.players[playerIdx].bankTotal += card.value
+      actions.push(`banked ${card.name}`)
+    }
+
+    // Update AI hand - remove played/banked cards, add drawn cards, trim to 7
+    const playedIds = new Set([...toPlay, ...toBank].map((c) => c.id))
+    const newHand = [...remaining, ...drawn.filter((c) => !playedIds.has(c.id))]
+    s.aiHands[aiPlayerId] = newHand.slice(0, 7)
+    s.deck = s.deck.slice(2)
+
+    if (actions.length > 0) {
+      s.moveLog.unshift(logEntry(aiPlayer.name, actions.join(", ")))
+    }
+  })
+
+  // Check win for AI
+  const winner = checkWin(get().players, aiPlayerId, get().setsToWin)
+  if (winner) {
+    set((s) => {
+      s.winner = winner
+      s.moveLog.unshift(logEntry(winner, "🏆 WON THE GAME!"))
+    })
+    return
+  }
+
+  // End AI turn
+  get().rotateTurn()
+},
+
+FIX 4 - In lib/use-game-store.ts, update rotateTurn to call runAiTurn instead of rotateTurn recursively:
+
+Find:
+  // Auto-skip AI turns after a short delay
+  const nextState = get()
+  if (nextState.currentTurnPlayerId !== nextState.currentPlayerId) {
+    setTimeout(() => get().rotateTurn(), 1000)
+  }
+
+Replace with:
+  // Run AI turn after a short delay
+  const nextState = get()
+  if (nextState.currentTurnPlayerId !== nextState.currentPlayerId) {
+    setTimeout(() => get().runAiTurn(), 1500)
+  }

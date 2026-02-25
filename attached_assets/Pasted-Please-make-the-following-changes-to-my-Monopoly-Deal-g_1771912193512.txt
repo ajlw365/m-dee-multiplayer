@@ -1,0 +1,141 @@
+Please make the following changes to my Monopoly Deal game to implement 
+Sly Deal and Deal Breaker steal mechanics:
+
+FIX 1 - Add action field to ActionCard interface in lib/game-types.ts:
+
+Find:
+export interface ActionCard {
+  id: string;
+  name: string;
+  type: "action";
+  description: string;
+  value: number;
+  targetPlayer?: boolean;
+}
+
+Replace with:
+export interface ActionCard {
+  id: string;
+  name: string;
+  type: "action";
+  action?: string;
+  description?: string;
+  value: number;
+  targetPlayer?: boolean;
+}
+
+FIX 2 - Add steal dialog state to the store in lib/use-game-store.ts:
+
+Add this interface before the GameStore interface:
+interface StealDialogState {
+  open: boolean;
+  mode: "property" | "set" | null;
+  cardId: string | null;
+  targetPlayerId: string | null;
+}
+
+Add to the GameStore interface alongside rentDialog:
+stealDialog: StealDialogState
+
+Add to the initial state:
+stealDialog: { open: false, mode: null, cardId: null, targetPlayerId: null },
+
+Add these actions to the GameStore interface:
+openStealDialog: (cardId: string, mode: "property" | "set") => void
+setStealTarget: (targetPlayerId: string) => void
+confirmStealProperty: (cardId: string, targetPlayerId: string, propertyId: string) => ActionResult
+confirmStealSet: (cardId: string, targetPlayerId: string, color: CardColor) => ActionResult
+dismissStealDialog: () => void
+
+FIX 3 - Add store implementations in lib/use-game-store.ts alongside other actions:
+
+openStealDialog: (cardId, mode) => {
+  set((s) => {
+    s.stealDialog = { open: true, mode, cardId, targetPlayerId: null }
+  })
+},
+
+setStealTarget: (targetPlayerId) => {
+  set((s) => {
+    s.stealDialog.targetPlayerId = targetPlayerId
+  })
+},
+
+dismissStealDialog: () => {
+  set((s) => {
+    s.stealDialog = { open: false, mode: null, cardId: null, targetPlayerId: null }
+  })
+},
+
+confirmStealProperty: (cardId, targetPlayerId, propertyId): ActionResult => {
+  const state = get()
+  const card = state.hand.find((c) => c.id === cardId)
+  if (!card) return { ok: false, message: "Card not found." }
+  const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId)!
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId)
+  if (!targetPlayer) return { ok: false, message: "Target player not found." }
+
+  set((s) => {
+    s.hand = s.hand.filter((c) => c.id !== cardId)
+    const currentIdx = s.players.findIndex((p) => p.id === s.currentPlayerId)
+    const targetIdx = s.players.findIndex((p) => p.id === targetPlayerId)
+
+    // Find and remove the property from target's sets
+    let stolenCard: PropertyCard | undefined
+    s.players[targetIdx].propertySets = s.players[targetIdx].propertySets
+      .map((ps) => {
+        const found = ps.cards.find((c) => c.id === propertyId)
+        if (found) {
+          stolenCard = found
+          const remaining = ps.cards.filter((c) => c.id !== propertyId)
+          return { ...ps, cards: remaining, isComplete: remaining.length >= ps.requiredCount }
+        }
+        return ps
+      })
+      .filter((ps) => ps.cards.length > 0)
+
+    // Add stolen card to current player's sets
+    if (stolenCard) {
+      s.players[currentIdx].propertySets = addCardToPropertySets(
+        s.players[currentIdx].propertySets,
+        stolenCard
+      )
+    }
+
+    s.actionsRemaining -= 1
+    s.playAreaCard = card
+    s.selectedCardId = null
+    s.stealDialog = { open: false, mode: null, cardId: null, targetPlayerId: null }
+    s.moveLog.unshift(logEntry(currentPlayer.name, `used Sly Deal to steal a property from ${targetPlayer.name}`))
+  })
+
+  if (get().actionsRemaining === 0) {
+    setTimeout(() => get().endTurn(), 300)
+  }
+
+  const winner = checkWin(get().players, get().currentPlayerId, get().setsToWin)
+  if (winner) {
+    set((s) => {
+      s.winner = winner
+      s.moveLog.unshift(logEntry(winner, "🏆 WON THE GAME!"))
+    })
+  }
+
+  return { ok: true, message: "Property stolen!" }
+},
+
+confirmStealSet: (cardId, targetPlayerId, color): ActionResult => {
+  const state = get()
+  const card = state.hand.find((c) => c.id === cardId)
+  if (!card) return { ok: false, message: "Card not found." }
+  const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId)!
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId)
+  if (!targetPlayer) return { ok: false, message: "Target player not found." }
+
+  set((s) => {
+    s.hand = s.hand.filter((c) => c.id !== cardId)
+    const currentIdx = s.players.findIndex((p) => p.id === s.currentPlayerId)
+    const targetIdx = s.players.findIndex((p) => p.id === targetPlayerId)
+
+    // Find the complete set
+    const stolenSet = s.players[targetIdx].prope

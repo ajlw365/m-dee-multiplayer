@@ -1,0 +1,218 @@
+I need to add a wildcard placement dialog to my Monopoly Deal game. Please make the following changes:
+
+1. In lib/use-game-store.ts, add this to the GameStore interface alongside rentDialog:
+wildcardDialog: {
+  open: boolean
+  cardId: string | null
+  availableColors: CardColor[]
+}
+
+2. In lib/use-game-store.ts, add this to the initial state block alongside rentDialog:
+wildcardDialog: {
+  open: false,
+  cardId: null,
+  availableColors: [],
+},
+
+3. In lib/use-game-store.ts, add these three actions to the GameStore interface:
+openWildcardDialog: (cardId: string, availableColors: CardColor[]) => void
+confirmWildcardPlacement: (cardId: string, chosenColor: CardColor) => ActionResult
+dismissWildcardDialog: () => void
+
+4. In lib/use-game-store.ts, add these three action implementations inside the immer store, alongside the other actions:
+
+openWildcardDialog: (cardId, availableColors) => {
+  set((s) => {
+    s.wildcardDialog = { open: true, cardId, availableColors }
+  })
+},
+
+dismissWildcardDialog: () => {
+  set((s) => {
+    s.wildcardDialog = { open: false, cardId: null, availableColors: [] }
+  })
+},
+
+confirmWildcardPlacement: (cardId, chosenColor) => {
+  const state = get()
+  const card = state.hand.find((c) => c.id === cardId)
+  if (!card) return { ok: false, message: "Card not found." }
+  const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId)!
+  set((s) => {
+    s.hand = s.hand.filter((c) => c.id !== cardId)
+    const playerIdx = s.players.findIndex((p) => p.id === s.currentPlayerId)
+    const fakeCard = {
+      id: card.id,
+      name: card.name,
+      color: chosenColor,
+      value: card.value,
+      rentTable: [],
+      setRequired: 2,
+    }
+    s.players[playerIdx].propertySets = addCardToPropertySets(
+      s.players[playerIdx].propertySets,
+      fakeCard
+    )
+    s.actionsRemaining -= 1
+    s.playAreaCard = card
+    s.selectedCardId = null
+    s.wildcardDialog = { open: false, cardId: null, availableColors: [] }
+    s.moveLog.unshift(logEntry(currentPlayer.name, `played ${card.name} to ${chosenColor} set`))
+  })
+  if (get().actionsRemaining === 0) {
+    setTimeout(() => get().endTurn(), 300)
+  }
+  const updatedPlayer = get().players.find((p) => p.id === get().currentPlayerId)!
+  if (updatedPlayer.propertySets.filter((s) => s.isComplete).length >= 1) {
+    set((s) => {
+      s.winner = currentPlayer.name
+      s.moveLog.unshift(logEntry(currentPlayer.name, "🏆 WON THE GAME with 3 complete sets!"))
+    })
+  }
+  return { ok: true, message: `Placed wildcard on ${chosenColor} set.` }
+},
+
+5. In lib/use-game-store.ts, inside the playPropertyCard function, find the section that handles isPropertyWildcard and replace it with:
+
+} else if (isPropertyWildcard(card)) {
+  const colors = card.colors === "multi"
+    ? get().players.find((p) => p.id === get().currentPlayerId)?.propertySets.map((ps) => ps.color) ?? []
+    : Array.isArray(card.colors) ? card.colors : ["darkblue"]
+
+  if (colors.length === 0) {
+    return { ok: false, message: "You have no property sets to place this wildcard on. Play a property card first." }
+  }
+
+  if (colors.length === 1) {
+    // Only one option, place automatically
+    const fakeCard = {
+      id: card.id,
+      name: card.name,
+      color: colors[0],
+      value: card.value,
+      rentTable: [],
+      setRequired: 2,
+    }
+    s.players[playerIdx].propertySets = addCardToPropertySets(
+      s.players[playerIdx].propertySets,
+      fakeCard
+    )
+  } else {
+    // Multiple options — open dialog instead of placing immediately
+    // We need to abort the set block and open dialog
+    // Re-add card to hand since we removed it
+    s.hand = [...s.hand, card]
+    s.actionsRemaining += 1 // undo the decrement that happens below
+    // Open dialog after set completes
+    setTimeout(() => get().openWildcardDialog(cardId, colors as CardColor[]), 0)
+    return
+  }
+}
+
+6. Create a new file components/wildcard-dialog.tsx with this content:
+
+"use client"
+
+import { cn } from "@/lib/utils"
+import type { CardColor } from "@/lib/game-types"
+import { Shuffle, X } from "lucide-react"
+
+const COLOR_META: Record<CardColor, { label: string; banner: string; text: string }> = {
+  darkblue:  { label: "Dark Blue",  banner: "bg-card-darkblue-banner",  text: "text-white" },
+  lightblue: { label: "Light Blue", banner: "bg-card-lightblue-banner", text: "text-white" },
+  brown:     { label: "Brown",      banner: "bg-card-brown-banner",     text: "text-white" },
+  green:     { label: "Green",      banner: "bg-card-green-banner",     text: "text-white" },
+  utility:   { label: "Utility",    banner: "bg-card-utility-banner",   text: "text-white" },
+  red:       { label: "Red",        banner: "bg-card-red-banner",       text: "text-white" },
+  yellow:    { label: "Yellow",     banner: "bg-[var(--card-yellow)]",  text: "text-[oklch(0.20_0.04_85)]" },
+  orange:    { label: "Orange",     banner: "bg-card-orange-banner",    text: "text-white" },
+  pink:      { label: "Pink",       banner: "bg-card-pink-banner",      text: "text-white" },
+  railroad:  { label: "Railroad",   banner: "bg-card-railroad-banner",  text: "text-white" },
+  purple:    { label: "Purple",     banner: "bg-card-purple-banner",    text: "text-white" },
+}
+
+interface WildcardDialogProps {
+  availableColors: CardColor[]
+  onConfirm: (color: CardColor) => void
+  onCancel: () => void
+}
+
+export function WildcardDialog({ availableColors, onConfirm, onCancel }: WildcardDialogProps) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={onCancel} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-3xl border-2 border-border bg-card p-5 shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-subtle">
+              <Shuffle className="h-4 w-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-black text-foreground uppercase tracking-wide">
+              Place Wildcard
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn-3d btn-3d-ghost flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="text-[10px] text-muted-foreground mb-4">
+          Choose which property set to add this wildcard to:
+        </p>
+
+        <div className="flex flex-wrap gap-2 mb-2">
+          {availableColors.map((color) => {
+            const meta = COLOR_META[color]
+            return (
+              <button
+                key={color}
+                type="button"
+                onClick={() => onConfirm(color)}
+                className={cn(
+                  "rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-wide transition-all hover:scale-105",
+                  meta.banner, meta.text
+                )}
+              >
+                {meta.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
+}
+
+7. In app/page.tsx, add these store selectors alongside the others:
+const wildcardDialog = useGameStore((s) => s.wildcardDialog)
+const confirmWildcardPlacement = useGameStore((s) => s.confirmWildcardPlacement)
+const dismissWildcardDialog = useGameStore((s) => s.dismissWildcardDialog)
+
+8. In app/page.tsx, pass these as props to GameTable:
+wildcardDialog={wildcardDialog}
+onConfirmWildcard={confirmWildcardPlacement}
+onDismissWildcard={dismissWildcardDialog}
+
+9. In components/game-table.tsx, add to the GameTableProps interface:
+wildcardDialog: { open: boolean; cardId: string | null; availableColors: CardColor[] }
+onConfirmWildcard: (cardId: string, chosenColor: CardColor) => void
+onDismissWildcard: () => void
+
+10. In components/game-table.tsx, import WildcardDialog and add it to the JSX alongside RentDialog:
+import { WildcardDialog } from "@/components/wildcard-dialog"
+
+{wildcardDialog.open && wildcardDialog.cardId && (
+  <WildcardDialog
+    availableColors={wildcardDialog.availableColors}
+    onConfirm={(color) => onConfirmWildcard(wildcardDialog.cardId!, color)}
+    onCancel={onDismissWildcard}
+  />
+)}

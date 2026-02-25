@@ -1,0 +1,71 @@
+Please make the following fixes to my Monopoly Deal game:
+
+FIX 1 - Restore wildcard color picker for ALL wildcards (both 2-color and multi-color):
+
+In lib/use-game-store.ts, find the playPropertyCard function and replace the entire 
+function body with this:
+
+        playPropertyCard: (cardId: string): ActionResult => {
+          const state = get()
+          const card = state.hand.find((c) => c.id === cardId)
+          if (!card || (!isPropertyCard(card) && !isPropertyWildcard(card)))
+            return { ok: false, message: "Not a property card." }
+          if (state.actionsRemaining <= 0)
+            return { ok: false, message: "No actions remaining." }
+
+          if (isPropertyWildcard(card)) {
+            const availableColors: CardColor[] = card.colors === "multi"
+              ? get().players.find((p) => p.id === get().currentPlayerId)?.propertySets.map((ps) => ps.color) ?? []
+              : Array.isArray(card.colors) ? [...card.colors] : ["darkblue"]
+            if (availableColors.length === 0)
+              return { ok: false, message: "Play a property card first before using this wildcard." }
+            get().openWildcardDialog(cardId, availableColors)
+            return { ok: true, message: "Choose a property set for your wildcard." }
+          }
+
+          const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId)!
+          set((s) => {
+            s.hand = s.hand.filter((c) => c.id !== cardId)
+            const playerIdx = s.players.findIndex((p) => p.id === s.currentPlayerId)
+            s.players[playerIdx].propertySets = addCardToPropertySets(
+              s.players[playerIdx].propertySets,
+              card as PropertyCard
+            )
+            s.actionsRemaining -= 1
+            s.playAreaCard = card
+            s.selectedCardId = null
+            s.moveLog.unshift(logEntry(currentPlayer.name, `played ${card.name} to their property table`))
+          })
+
+          if (get().actionsRemaining === 0) {
+            setTimeout(() => get().endTurn(), 300)
+          }
+
+          const updatedPlayer = get().players.find((p) => p.id === get().currentPlayerId)!
+          if (updatedPlayer.propertySets.filter((s) => s.isComplete).length >= 1) {
+            set((s) => {
+              s.winner = currentPlayer.name
+              s.moveLog.unshift(logEntry(currentPlayer.name, "🏆 WON THE GAME with 3 complete sets!"))
+            })
+          }
+          return { ok: true, message: `Played ${card.name}.` }
+        },
+
+FIX 2 - Rainbow gradient for multi-color wildcard and wild rent cards:
+
+In components/game-card.tsx, find the RENT CARD section and locate the isWild 
+gradient className:
+
+"bg-[linear-gradient(135deg,oklch(0.58_0.24_25)_0%,oklch(0.55_0.20_155)_50%,oklch(0.40_0.20_260)_100%)]"
+
+Replace it with:
+
+"bg-[linear-gradient(135deg,oklch(0.58_0.24_25)_0%,oklch(0.75_0.18_60)_20%,oklch(0.65_0.20_130)_40%,oklch(0.50_0.20_200)_60%,oklch(0.45_0.22_280)_80%,oklch(0.60_0.22_330)_100%)]"
+
+Then find the PROPERTY WILDCARD section and locate the isMulti gradient className:
+
+"bg-[linear-gradient(135deg,oklch(0.58_0.24_25)_0%,oklch(0.82_0.16_90)_25%,oklch(0.55_0.20_148)_50%,oklch(0.40_0.20_260)_75%,oklch(0.65_0.20_350)_100%)]"
+
+Replace it with:
+
+"bg-[linear-gradient(135deg,oklch(0.58_0.24_25)_0%,oklch(0.75_0.18_60)_20%,oklch(0.65_0.20_130)_40%,oklch(0.50_0.20_200)_60%,oklch(0.45_0.22_280)_80%,oklch(0.60_0.22_330)_100%)]"

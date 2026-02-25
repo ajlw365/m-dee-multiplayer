@@ -1,0 +1,72 @@
+Please make the following two fixes to my Monopoly Deal game:
+
+FIX 1 - Wildcard cards showing $0 rent on property table:
+
+In lib/use-game-store.ts, find the confirmWildcardPlacement function.
+Find where the fakeCard is created:
+
+  const fakeCard = {
+    id: card.id,
+    name: card.name,
+    color: chosenColor,
+    value: card.value,
+    rentTable: [],
+    setRequired: 2,
+  }
+
+Replace it with:
+
+  const existingSet = s.players[playerIdx].propertySets.find(
+    (ps) => ps.color === chosenColor
+  )
+  const existingCard = existingSet?.cards.find(
+    (c) => "rentTable" in c && Array.isArray((c as any).rentTable) && (c as any).rentTable.length > 0
+  ) as any
+  const fakeCard = {
+    id: card.id,
+    name: card.name,
+    color: chosenColor,
+    value: card.value,
+    rentTable: existingCard?.rentTable ?? [],
+    setRequired: existingCard?.setRequired ?? existingSet?.requiredCount ?? 2,
+  }
+
+FIX 2 - Rainbow multi-color wildcard dialog showing blank:
+
+In lib/use-game-store.ts, find the playPropertyCard function.
+Find this block:
+
+  if (isPropertyWildcard(card)) {
+    const availableColors: CardColor[] = card.colors === "multi"
+      ? get().players.find((p) => p.id === get().currentPlayerId)?.propertySets.map((ps) => ps.color) ?? []
+      : Array.isArray(card.colors) ? [...card.colors] : ["darkblue"]
+    if (availableColors.length === 0)
+      return { ok: false, message: "Play a property card first before using this wildcard." }
+    get().openWildcardDialog(cardId, availableColors)
+    return { ok: true, message: "Choose a property set for your wildcard." }
+  }
+
+Replace it with:
+
+  if (isPropertyWildcard(card)) {
+    let availableColors: CardColor[] = []
+    if (card.colors === "multi") {
+      // For rainbow wildcard, show ALL valid CardColor values that the player has sets for
+      availableColors = get()
+        .players.find((p) => p.id === get().currentPlayerId)
+        ?.propertySets.map((ps) => ps.color)
+        .filter((c): c is CardColor => 
+          ["darkblue","lightblue","brown","green","utility","red","yellow","orange","pink","railroad","purple"].includes(c)
+        ) ?? []
+    } else {
+      // For 2-color wildcard, use the two colors on the card
+      availableColors = (Array.isArray(card.colors) ? card.colors : ["darkblue"]).filter(
+        (c): c is CardColor =>
+          ["darkblue","lightblue","brown","green","utility","red","yellow","orange","pink","railroad","purple"].includes(c)
+      )
+    }
+    if (availableColors.length === 0)
+      return { ok: false, message: "No valid property sets to place this wildcard on." }
+    get().openWildcardDialog(cardId, availableColors)
+    return { ok: true, message: "Choose a property set for your wildcard." }
+  }
